@@ -10,7 +10,8 @@ ENV/
 .venv
 
 # PyInstaller
-build/
+build/*
+!build/build.py
 dist/
 *.spec
 
