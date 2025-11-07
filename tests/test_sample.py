@@ -21,3 +21,18 @@ def test_with_sample_images(sample_images):
     for img_path in sample_images:
         assert img_path.exists()
         assert img_path.suffix == '.png'
+
+
+@pytest.mark.skip(reason="Requires pytest-mock to be installed")
+def test_mock_screenshot_fixture(mock_screenshot):
+    """mock_screenshotフィクスチャのテスト (requires pytest-mock)"""
+    # モニタ情報が正しくモックされているか
+    assert len(mock_screenshot.monitors) == 2
+    assert mock_screenshot.monitors[1]['width'] == 1920
+    assert mock_screenshot.monitors[1]['height'] == 1080
+
+    # grab()メソッドがモックされているか
+    screenshot = mock_screenshot.grab(mock_screenshot.monitors[0])
+    assert screenshot is not None
+    assert screenshot.size == (100, 100)
+    assert len(screenshot.bgra) == 100 * 100 * 4
