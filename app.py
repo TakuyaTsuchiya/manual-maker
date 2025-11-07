@@ -50,9 +50,51 @@ def main():
         st.warning("このセッションには画像がありません")
         return
 
-    # 簡易リスト表示
-    for i, img_data in enumerate(images):
-        st.write(f"{i + 1}. `{Path(img_data.filepath).name}` - {img_data.description or '（説明なし）'}")
+    # 画像グリッド表示（3列）
+    display_image_grid(images)
+
+
+def display_image_grid(images):
+    """
+    画像を3列グリッドで表示
+
+    Args:
+        images: ImageDataのリスト
+    """
+    # 3列グリッド
+    cols_per_row = 3
+
+    for i in range(0, len(images), cols_per_row):
+        cols = st.columns(cols_per_row)
+
+        for col_idx, col in enumerate(cols):
+            img_idx = i + col_idx
+
+            if img_idx >= len(images):
+                break
+
+            img_data = images[img_idx]
+            img_path = Path(img_data.filepath)
+
+            with col:
+                if img_path.exists():
+                    # サムネイル表示
+                    st.image(
+                        str(img_path),
+                        use_container_width=True,
+                        caption=f"#{img_idx + 1}"
+                    )
+
+                    # 説明文表示
+                    if img_data.description:
+                        st.caption(f"📝 {img_data.description}")
+                    else:
+                        st.caption("📝 （説明なし）")
+
+                    # ファイル名表示
+                    st.caption(f"📄 `{img_path.name}`")
+                else:
+                    st.error(f"画像が見つかりません: {img_path.name}")
 
 
 def select_session() -> Path | None:
