@@ -50,6 +50,13 @@ def main():
         st.warning("このセッションには画像がありません")
         return
 
+    # Undoボタン（画像リストの上部に配置）
+    if len(manager.undo_stack) > 0:
+        if st.button(f"↩️ 元に戻す ({len(manager.undo_stack)}件)"):
+            if manager.undo():
+                st.success("✅ 操作を元に戻しました")
+                st.rerun()
+
     # 画像グリッド表示（3列）
     display_image_grid(images)
 
@@ -84,6 +91,14 @@ def display_image_grid(images):
                         use_container_width=True,
                         caption=f"#{img_idx + 1}"
                     )
+
+                    # アクションボタン（削除）
+                    if st.button("🗑️ 削除", key=f"delete_{img_idx}", type="secondary"):
+                        # 確認なしで削除（確認ダイアログは後のコミットで追加）
+                        manager = st.session_state.image_manager
+                        manager.delete_image(img_idx)
+                        st.success(f"✅ 画像#{img_idx + 1}を削除しました")
+                        st.rerun()
 
                     # 説明文編集フォーム
                     with st.expander("✏️ 説明文を編集", expanded=False):
