@@ -10,7 +10,9 @@ ENV/
 .venv
 
 # PyInstaller
-build/
+build/*
+!build/build.py
+!build/README.md
 dist/
 *.spec
 
