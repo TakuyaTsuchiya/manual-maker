@@ -58,3 +58,63 @@ class TestIntegration:
         # 順序も保持されているか
         for i, img in enumerate(new_manager.images):
             assert img.order == i
+
+    def test_multiple_undo_redo(self, temp_session_dir, sample_images):
+        """複数回のUndo/Redoテスト"""
+        manager = ImageManager(temp_session_dir)
+        initial_count = len(manager.images)
+
+        # 操作1: 説明文更新
+        manager.update_description(0, "Step 1")
+        assert manager.images[0].description == "Step 1"
+        assert len(manager.undo_stack) == 1
+
+        # 操作2: 説明文更新
+        manager.update_description(1, "Step 2")
+        assert manager.images[1].description == "Step 2"
+        assert len(manager.undo_stack) == 2
+
+        # 操作3: 削除
+        manager.delete_image(2)
+        assert len(manager.images) == initial_count - 1
+        assert len(manager.undo_stack) == 3
+
+        # Undo 1回目: 削除を取り消し
+        assert manager.undo() is True
+        assert len(manager.images) == initial_count
+        assert len(manager.undo_stack) == 2
+
+        # Undo 2回目: Step 2を取り消し
+        assert manager.undo() is True
+        assert manager.images[1].description == ""
+        assert len(manager.undo_stack) == 1
+
+        # Undo 3回目: Step 1を取り消し
+        assert manager.undo() is True
+        assert manager.images[0].description == ""
+        assert len(manager.undo_stack) == 0
+
+        # もうUndoできない
+        assert manager.undo() is False
+
+    def test_undo_preserves_order(self, temp_session_dir, sample_images):
+        """Undoが順序を正しく復元するかテスト"""
+        manager = ImageManager(temp_session_dir)
+
+        # 元の順序を記録
+        original_paths = [img.filepath for img in manager.images]
+
+        # 並び替え
+        manager.swap_images(0, 2)
+        reordered_paths = [img.filepath for img in manager.images]
+
+        # 順序が変わっているか
+        assert reordered_paths != original_paths
+        assert reordered_paths == [original_paths[2], original_paths[1], original_paths[0]]
+
+        # Undo
+        manager.undo()
+        restored_paths = [img.filepath for img in manager.images]
+
+        # 元の順序に戻っているか
+        assert restored_paths == original_paths
