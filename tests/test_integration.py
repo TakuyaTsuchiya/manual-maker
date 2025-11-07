@@ -118,3 +118,62 @@ class TestIntegration:
 
         # 元の順序に戻っているか
         assert restored_paths == original_paths
+
+    def test_full_workflow_record_edit_export(self, temp_session_dir):
+        """完全フロー: 収録→編集→出力テスト"""
+        # ステップ1: 収録（画像ファイル作成をシミュレート）
+        from PIL import Image
+        image_paths = []
+        for i in range(5):
+            img = Image.new('RGB', (800, 600), color=(i*50, 100, 200))
+            img_path = temp_session_dir / f"screenshot_{i:04d}.png"
+            img.save(img_path)
+            image_paths.append(img_path)
+
+        # ステップ2: 編集（ImageManagerで画像管理）
+        manager = ImageManager(temp_session_dir)
+        assert len(manager.images) == 5
+
+        # 説明文を追加
+        manager.update_description(0, "アプリケーションを起動")
+        manager.update_description(1, "ファイルを開く")
+        manager.update_description(2, "編集モードに切り替え")
+        manager.update_description(3, "変更を保存")
+        manager.update_description(4, "アプリケーションを終了")
+
+        # 2枚目を削除
+        manager.delete_image(1)
+        assert len(manager.images) == 4
+
+        # Undoして復元
+        manager.undo()
+        assert len(manager.images) == 5
+
+        # 並び替え（最後と最初を入れ替え）
+        manager.swap_images(0, 4)
+
+        # ステップ3: PowerPoint出力
+        generator = PPTXGenerator()
+        output_path = temp_session_dir / "manual.pptx"
+
+        result = generator.generate(
+            manager.get_images(),
+            output_path,
+            title="統合テストマニュアル"
+        )
+
+        # 検証
+        assert result.exists()
+        assert result.suffix == '.pptx'
+
+        # PowerPointを開いて確認
+        from pptx import Presentation
+        prs = Presentation(str(result))
+
+        # タイトルスライド + 画像スライド5枚 = 6枚
+        assert len(prs.slides) >= 6
+
+        # タイトルスライドの内容確認
+        title_slide = prs.slides[0]
+        title_texts = [shape.text for shape in title_slide.shapes if hasattr(shape, "text")]
+        assert any("統合テストマニュアル" in text for text in title_texts)
