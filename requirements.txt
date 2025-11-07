@@ -1,0 +1,6 @@
+streamlit==1.28.0
+pynput==1.7.6
+mss==9.0.1
+python-pptx==0.6.21
+Pillow==10.0.0
+pyinstaller==6.0.0
