@@ -92,13 +92,41 @@ def display_image_grid(images):
                         caption=f"#{img_idx + 1}"
                     )
 
-                    # アクションボタン（削除）
-                    if st.button("🗑️ 削除", key=f"delete_{img_idx}", type="secondary"):
-                        # 確認なしで削除（確認ダイアログは後のコミットで追加）
-                        manager = st.session_state.image_manager
-                        manager.delete_image(img_idx)
-                        st.success(f"✅ 画像#{img_idx + 1}を削除しました")
-                        st.rerun()
+                    # アクションボタン行
+                    btn_cols = st.columns([1, 1, 2])
+
+                    with btn_cols[0]:
+                        # 上に移動ボタン
+                        if img_idx > 0:
+                            if st.button("⬆️", key=f"up_{img_idx}"):
+                                manager = st.session_state.image_manager
+                                # 現在の順序を取得して入れ替え
+                                current_order = list(range(len(images)))
+                                current_order[img_idx], current_order[img_idx - 1] = \
+                                    current_order[img_idx - 1], current_order[img_idx]
+                                manager.reorder_images(current_order)
+                                st.rerun()
+
+                    with btn_cols[1]:
+                        # 下に移動ボタン
+                        if img_idx < len(images) - 1:
+                            if st.button("⬇️", key=f"down_{img_idx}"):
+                                manager = st.session_state.image_manager
+                                # 現在の順序を取得して入れ替え
+                                current_order = list(range(len(images)))
+                                current_order[img_idx], current_order[img_idx + 1] = \
+                                    current_order[img_idx + 1], current_order[img_idx]
+                                manager.reorder_images(current_order)
+                                st.rerun()
+
+                    with btn_cols[2]:
+                        # 削除ボタン
+                        if st.button("🗑️ 削除", key=f"delete_{img_idx}", type="secondary"):
+                            # 確認なしで削除（確認ダイアログは後のコミットで追加）
+                            manager = st.session_state.image_manager
+                            manager.delete_image(img_idx)
+                            st.success(f"✅ 画像#{img_idx + 1}を削除しました")
+                            st.rerun()
 
                     # 説明文編集フォーム
                     with st.expander("✏️ 説明文を編集", expanded=False):
