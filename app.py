@@ -5,6 +5,7 @@ Streamlit編集UI
 import streamlit as st
 from pathlib import Path
 from config import SESSIONS_DIR
+from utils.image_manager import ImageManager
 
 
 def main():
@@ -33,6 +34,25 @@ def main():
         return
 
     st.success(f"セッション: `{session_dir.name}`")
+
+    # ImageManagerを初期化（セッションステートで管理）
+    if "image_manager" not in st.session_state:
+        st.session_state.image_manager = ImageManager(session_dir)
+
+    manager = st.session_state.image_manager
+
+    # 画像リストを表示
+    images = manager.get_images()
+
+    st.subheader(f"📷 画像一覧 ({len(images)}枚)")
+
+    if len(images) == 0:
+        st.warning("このセッションには画像がありません")
+        return
+
+    # 簡易リスト表示
+    for i, img_data in enumerate(images):
+        st.write(f"{i + 1}. `{Path(img_data.filepath).name}` - {img_data.description or '（説明なし）'}")
 
 
 def select_session() -> Path | None:
