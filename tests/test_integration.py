@@ -122,7 +122,6 @@ class TestIntegration:
     def test_full_workflow_record_edit_export(self, temp_session_dir):
         """完全フロー: 収録→編集→出力テスト"""
         # ステップ1: 収録（画像ファイル作成をシミュレート）
-        from PIL import Image
         image_paths = []
         for i in range(5):
             img = Image.new('RGB', (800, 600), color=(i*50, 100, 200))
@@ -182,46 +181,45 @@ class TestIntegration:
     def test_performance_100_images(self, temp_session_dir):
         """パフォーマンステスト: 100枚の画像処理"""
         import time
-        from PIL import Image
+        from pptx import Presentation
 
         # 100枚の画像を作成
         print("\n100枚の画像を作成中...")
-        start_create = time.time()
+        start_create = time.perf_counter()
         for i in range(100):
             img = Image.new('RGB', (800, 600), color=(i*2, 100, 150))
             img_path = temp_session_dir / f"img_{i:04d}.png"
             img.save(img_path)
-        create_time = time.time() - start_create
+        create_time = time.perf_counter() - start_create
         print(f"画像作成: {create_time:.2f}秒")
 
         # ImageManager初期化（画像自動検出）
-        start_load = time.time()
+        start_load = time.perf_counter()
         manager = ImageManager(temp_session_dir)
-        load_time = time.time() - start_load
+        load_time = time.perf_counter() - start_load
         print(f"ImageManager初期化: {load_time:.2f}秒")
 
         assert len(manager.images) == 100
 
         # 説明文を一括追加
-        start_edit = time.time()
+        start_edit = time.perf_counter()
         for i in range(100):
             manager.update_description(i, f"操作手順 {i+1}")
-        edit_time = time.time() - start_edit
+        edit_time = time.perf_counter() - start_edit
         print(f"説明文追加（100件）: {edit_time:.2f}秒")
 
         # PowerPoint生成
-        start_export = time.time()
+        start_export = time.perf_counter()
         generator = PPTXGenerator()
         output_path = temp_session_dir / "large_manual.pptx"
         result = generator.generate(manager.get_images(), output_path, title="大規模マニュアル")
-        export_time = time.time() - start_export
+        export_time = time.perf_counter() - start_export
         print(f"PowerPoint生成: {export_time:.2f}秒")
 
         # 検証
         assert result.exists()
 
         # PowerPointを開いて確認
-        from pptx import Presentation
         prs = Presentation(str(result))
         assert len(prs.slides) >= 101  # タイトル + 100画像
 
