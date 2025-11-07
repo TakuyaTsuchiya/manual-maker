@@ -6,6 +6,7 @@ import streamlit as st
 from pathlib import Path
 from config import SESSIONS_DIR
 from utils.image_manager import ImageManager
+from exporter.pptx_generator import PPTXGenerator
 
 
 def main():
@@ -59,6 +60,10 @@ def main():
 
     # 画像グリッド表示（3列）
     display_image_grid(images)
+
+    # PowerPoint生成UI
+    st.divider()
+    export_pptx_ui(session_dir, manager, images)
 
 
 def display_image_grid(images):
@@ -173,6 +178,63 @@ def edit_description_form(img_idx: int, img_data):
             st.rerun()
         else:
             st.info("変更がありません")
+
+
+def export_pptx_ui(session_dir: Path, manager: ImageManager, images):
+    """
+    PowerPoint出力UI
+
+    Args:
+        session_dir: セッションディレクトリ
+        manager: ImageManagerインスタンス
+        images: ImageDataのリスト
+    """
+    st.subheader("📊 PowerPoint出力")
+
+    col1, col2 = st.columns([3, 1])
+
+    with col1:
+        # タイトル入力
+        title = st.text_input(
+            "プレゼンテーションのタイトル",
+            value="操作マニュアル",
+            help="タイトルスライドに表示されます"
+        )
+
+    with col2:
+        st.write("")  # スペース調整
+        st.write("")
+
+    # 生成ボタン
+    if st.button("📥 PowerPoint生成", type="primary", use_container_width=True):
+        if len(images) == 0:
+            st.error("画像がありません。PowerPointを生成できません。")
+            return
+
+        try:
+            # 出力ファイル名
+            output_filename = f"{session_dir.name}_manual.pptx"
+            output_path = session_dir / output_filename
+
+            # PowerPoint生成
+            with st.spinner("PowerPointファイルを生成中..."):
+                generator = PPTXGenerator()
+                result_path = generator.generate(images, output_path, title=title)
+
+            st.success(f"✅ PowerPointファイルを生成しました: `{output_filename}`")
+
+            # ダウンロードボタン
+            with open(result_path, "rb") as f:
+                st.download_button(
+                    label="💾 ダウンロード",
+                    data=f,
+                    file_name=output_filename,
+                    mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    use_container_width=True
+                )
+
+        except Exception as e:
+            st.error(f"❌ PowerPoint生成中にエラーが発生しました: {e}")
 
 
 def select_session() -> Path | None:
