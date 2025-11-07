@@ -85,7 +85,11 @@ def display_image_grid(images):
                         caption=f"#{img_idx + 1}"
                     )
 
-                    # 説明文表示
+                    # 説明文編集フォーム
+                    with st.expander("✏️ 説明文を編集", expanded=False):
+                        edit_description_form(img_idx, img_data)
+
+                    # 現在の説明文表示
                     if img_data.description:
                         st.caption(f"📝 {img_data.description}")
                     else:
@@ -95,6 +99,37 @@ def display_image_grid(images):
                     st.caption(f"📄 `{img_path.name}`")
                 else:
                     st.error(f"画像が見つかりません: {img_path.name}")
+
+
+def edit_description_form(img_idx: int, img_data):
+    """
+    説明文編集フォーム
+
+    Args:
+        img_idx: 画像のインデックス
+        img_data: ImageDataオブジェクト
+    """
+    manager = st.session_state.image_manager
+
+    # 現在の説明文を初期値として表示
+    current_desc = img_data.description or ""
+
+    new_desc = st.text_area(
+        "説明文",
+        value=current_desc,
+        key=f"desc_input_{img_idx}",
+        height=100,
+        placeholder="この操作の説明を入力してください..."
+    )
+
+    # 保存ボタン
+    if st.button("💾 保存", key=f"save_desc_{img_idx}"):
+        if new_desc != current_desc:
+            manager.update_description(img_idx, new_desc)
+            st.success("✅ 説明文を更新しました")
+            st.rerun()
+        else:
+            st.info("変更がありません")
 
 
 def select_session() -> Path | None:
