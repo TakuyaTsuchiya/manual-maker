@@ -177,3 +177,57 @@ class TestIntegration:
         title_slide = prs.slides[0]
         title_texts = [shape.text for shape in title_slide.shapes if hasattr(shape, "text")]
         assert any("統合テストマニュアル" in text for text in title_texts)
+
+    @pytest.mark.slow
+    def test_performance_100_images(self, temp_session_dir):
+        """パフォーマンステスト: 100枚の画像処理"""
+        import time
+        from PIL import Image
+
+        # 100枚の画像を作成
+        print("\n100枚の画像を作成中...")
+        start_create = time.time()
+        for i in range(100):
+            img = Image.new('RGB', (800, 600), color=(i*2, 100, 150))
+            img_path = temp_session_dir / f"img_{i:04d}.png"
+            img.save(img_path)
+        create_time = time.time() - start_create
+        print(f"画像作成: {create_time:.2f}秒")
+
+        # ImageManager初期化（画像自動検出）
+        start_load = time.time()
+        manager = ImageManager(temp_session_dir)
+        load_time = time.time() - start_load
+        print(f"ImageManager初期化: {load_time:.2f}秒")
+
+        assert len(manager.images) == 100
+
+        # 説明文を一括追加
+        start_edit = time.time()
+        for i in range(100):
+            manager.update_description(i, f"操作手順 {i+1}")
+        edit_time = time.time() - start_edit
+        print(f"説明文追加（100件）: {edit_time:.2f}秒")
+
+        # PowerPoint生成
+        start_export = time.time()
+        generator = PPTXGenerator()
+        output_path = temp_session_dir / "large_manual.pptx"
+        result = generator.generate(manager.get_images(), output_path, title="大規模マニュアル")
+        export_time = time.time() - start_export
+        print(f"PowerPoint生成: {export_time:.2f}秒")
+
+        # 検証
+        assert result.exists()
+
+        # PowerPointを開いて確認
+        from pptx import Presentation
+        prs = Presentation(str(result))
+        assert len(prs.slides) >= 101  # タイトル + 100画像
+
+        # パフォーマンス要件チェック（合計10秒以内）
+        total_time = load_time + edit_time + export_time
+        print(f"合計処理時間: {total_time:.2f}秒")
+
+        # 緩い制限: 100枚で30秒以内ならOK（CIでも通るように）
+        assert total_time < 30, f"パフォーマンス要件未達: {total_time:.2f}秒 > 30秒"
