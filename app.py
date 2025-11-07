@@ -127,11 +127,26 @@ def display_image_grid(images):
                     with btn_cols[2]:
                         # 削除ボタン
                         if st.button("🗑️ 削除", key=f"delete_{img_idx}", type="secondary"):
-                            # 確認なしで削除（確認ダイアログは後のコミットで追加）
-                            manager = st.session_state.image_manager
-                            manager.delete_image(img_idx)
-                            st.success(f"✅ 画像#{img_idx + 1}を削除しました")
+                            # 確認用のセッションステート
+                            st.session_state[f"confirm_delete_{img_idx}"] = True
                             st.rerun()
+
+                    # 削除確認ダイアログ
+                    if st.session_state.get(f"confirm_delete_{img_idx}", False):
+                        with st.expander("⚠️ 削除の確認", expanded=True):
+                            st.warning(f"画像#{img_idx + 1}を削除しますか？この操作は元に戻すことができます（Undoボタン）。")
+                            confirm_cols = st.columns(2)
+                            with confirm_cols[0]:
+                                if st.button("✅ 削除する", key=f"confirm_yes_{img_idx}", type="primary"):
+                                    manager = st.session_state.image_manager
+                                    manager.delete_image(img_idx)
+                                    st.session_state[f"confirm_delete_{img_idx}"] = False
+                                    st.success(f"✅ 画像#{img_idx + 1}を削除しました")
+                                    st.rerun()
+                            with confirm_cols[1]:
+                                if st.button("❌ キャンセル", key=f"confirm_no_{img_idx}"):
+                                    st.session_state[f"confirm_delete_{img_idx}"] = False
+                                    st.rerun()
 
                     # 説明文編集フォーム
                     with st.expander("✏️ 説明文を編集", expanded=False):
