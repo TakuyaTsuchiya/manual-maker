@@ -12,6 +12,7 @@ ENV/
 # PyInstaller
 build/*
 !build/build.py
+!build/README.md
 dist/
 *.spec
 
