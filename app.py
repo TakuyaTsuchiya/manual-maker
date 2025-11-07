@@ -9,6 +9,16 @@ from utils.image_manager import ImageManager
 from exporter.pptx_generator import PPTXGenerator
 
 
+def cleanup_session_state():
+    """古いUIステートフラグを削除"""
+    keys_to_delete = [
+        k for k in st.session_state.keys()
+        if k.startswith(("confirm_delete_", "desc_input_"))
+    ]
+    for key in keys_to_delete:
+        del st.session_state[key]
+
+
 def main():
     """メインアプリケーション"""
     st.set_page_config(
@@ -39,6 +49,10 @@ def main():
     # ImageManagerを初期化（セッションステートで管理）
     if "image_manager" not in st.session_state or st.session_state.get("current_session") != session_dir:
         try:
+            # セッション変更時に古いUIステートをクリーンアップ
+            if "current_session" in st.session_state and st.session_state.current_session != session_dir:
+                cleanup_session_state()
+
             st.session_state.image_manager = ImageManager(session_dir)
             st.session_state.current_session = session_dir
         except Exception as e:
@@ -120,11 +134,7 @@ def display_image_grid(images):
                             if st.button("⬆️", key=f"up_{img_idx}"):
                                 try:
                                     manager = st.session_state.image_manager
-                                    # 現在の順序を取得して入れ替え
-                                    current_order = list(range(len(images)))
-                                    current_order[img_idx], current_order[img_idx - 1] = \
-                                        current_order[img_idx - 1], current_order[img_idx]
-                                    manager.reorder_images(current_order)
+                                    manager.swap_images(img_idx, img_idx - 1)
                                     st.rerun()
                                 except Exception as e:
                                     st.error(f"❌ 並び替えに失敗しました: {e}")
@@ -135,11 +145,7 @@ def display_image_grid(images):
                             if st.button("⬇️", key=f"down_{img_idx}"):
                                 try:
                                     manager = st.session_state.image_manager
-                                    # 現在の順序を取得して入れ替え
-                                    current_order = list(range(len(images)))
-                                    current_order[img_idx], current_order[img_idx + 1] = \
-                                        current_order[img_idx + 1], current_order[img_idx]
-                                    manager.reorder_images(current_order)
+                                    manager.swap_images(img_idx, img_idx + 1)
                                     st.rerun()
                                 except Exception as e:
                                     st.error(f"❌ 並び替えに失敗しました: {e}")
@@ -264,15 +270,17 @@ def export_pptx_ui(session_dir: Path, manager: ImageManager, images):
 
             st.success(f"✅ PowerPointファイルを生成しました: `{output_filename}`")
 
-            # ダウンロードボタン
+            # ダウンロードボタン（ファイルをメモリに読み込んでから渡す）
             with open(result_path, "rb") as f:
-                st.download_button(
-                    label="💾 ダウンロード",
-                    data=f,
-                    file_name=output_filename,
-                    mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                    use_container_width=True
-                )
+                pptx_data = f.read()
+
+            st.download_button(
+                label="💾 ダウンロード",
+                data=pptx_data,
+                file_name=output_filename,
+                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                use_container_width=True
+            )
 
         except Exception as e:
             st.error(f"❌ PowerPoint生成中にエラーが発生しました: {e}")
