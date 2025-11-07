@@ -37,13 +37,22 @@ def main():
     st.success(f"セッション: `{session_dir.name}`")
 
     # ImageManagerを初期化（セッションステートで管理）
-    if "image_manager" not in st.session_state:
-        st.session_state.image_manager = ImageManager(session_dir)
+    if "image_manager" not in st.session_state or st.session_state.get("current_session") != session_dir:
+        try:
+            st.session_state.image_manager = ImageManager(session_dir)
+            st.session_state.current_session = session_dir
+        except Exception as e:
+            st.error(f"❌ セッションの読み込みに失敗しました: {e}")
+            return
 
     manager = st.session_state.image_manager
 
     # 画像リストを表示
-    images = manager.get_images()
+    try:
+        images = manager.get_images()
+    except Exception as e:
+        st.error(f"❌ 画像リストの取得に失敗しました: {e}")
+        return
 
     st.subheader(f"📷 画像一覧 ({len(images)}枚)")
 
@@ -54,9 +63,14 @@ def main():
     # Undoボタン（画像リストの上部に配置）
     if len(manager.undo_stack) > 0:
         if st.button(f"↩️ 元に戻す ({len(manager.undo_stack)}件)"):
-            if manager.undo():
-                st.success("✅ 操作を元に戻しました")
-                st.rerun()
+            try:
+                if manager.undo():
+                    st.success("✅ 操作を元に戻しました")
+                    st.rerun()
+                else:
+                    st.warning("⚠️ 元に戻せる操作がありません")
+            except Exception as e:
+                st.error(f"❌ 操作を元に戻すことに失敗しました: {e}")
 
     # 画像グリッド表示（3列）
     display_image_grid(images)
@@ -104,25 +118,31 @@ def display_image_grid(images):
                         # 上に移動ボタン
                         if img_idx > 0:
                             if st.button("⬆️", key=f"up_{img_idx}"):
-                                manager = st.session_state.image_manager
-                                # 現在の順序を取得して入れ替え
-                                current_order = list(range(len(images)))
-                                current_order[img_idx], current_order[img_idx - 1] = \
-                                    current_order[img_idx - 1], current_order[img_idx]
-                                manager.reorder_images(current_order)
-                                st.rerun()
+                                try:
+                                    manager = st.session_state.image_manager
+                                    # 現在の順序を取得して入れ替え
+                                    current_order = list(range(len(images)))
+                                    current_order[img_idx], current_order[img_idx - 1] = \
+                                        current_order[img_idx - 1], current_order[img_idx]
+                                    manager.reorder_images(current_order)
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"❌ 並び替えに失敗しました: {e}")
 
                     with btn_cols[1]:
                         # 下に移動ボタン
                         if img_idx < len(images) - 1:
                             if st.button("⬇️", key=f"down_{img_idx}"):
-                                manager = st.session_state.image_manager
-                                # 現在の順序を取得して入れ替え
-                                current_order = list(range(len(images)))
-                                current_order[img_idx], current_order[img_idx + 1] = \
-                                    current_order[img_idx + 1], current_order[img_idx]
-                                manager.reorder_images(current_order)
-                                st.rerun()
+                                try:
+                                    manager = st.session_state.image_manager
+                                    # 現在の順序を取得して入れ替え
+                                    current_order = list(range(len(images)))
+                                    current_order[img_idx], current_order[img_idx + 1] = \
+                                        current_order[img_idx + 1], current_order[img_idx]
+                                    manager.reorder_images(current_order)
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"❌ 並び替えに失敗しました: {e}")
 
                     with btn_cols[2]:
                         # 削除ボタン
@@ -138,11 +158,14 @@ def display_image_grid(images):
                             confirm_cols = st.columns(2)
                             with confirm_cols[0]:
                                 if st.button("✅ 削除する", key=f"confirm_yes_{img_idx}", type="primary"):
-                                    manager = st.session_state.image_manager
-                                    manager.delete_image(img_idx)
-                                    st.session_state[f"confirm_delete_{img_idx}"] = False
-                                    st.success(f"✅ 画像#{img_idx + 1}を削除しました")
-                                    st.rerun()
+                                    try:
+                                        manager = st.session_state.image_manager
+                                        manager.delete_image(img_idx)
+                                        st.session_state[f"confirm_delete_{img_idx}"] = False
+                                        st.success(f"✅ 画像#{img_idx + 1}を削除しました")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"❌ 削除に失敗しました: {e}")
                             with confirm_cols[1]:
                                 if st.button("❌ キャンセル", key=f"confirm_no_{img_idx}"):
                                     st.session_state[f"confirm_delete_{img_idx}"] = False
@@ -188,9 +211,12 @@ def edit_description_form(img_idx: int, img_data):
     # 保存ボタン
     if st.button("💾 保存", key=f"save_desc_{img_idx}"):
         if new_desc != current_desc:
-            manager.update_description(img_idx, new_desc)
-            st.success("✅ 説明文を更新しました")
-            st.rerun()
+            try:
+                manager.update_description(img_idx, new_desc)
+                st.success("✅ 説明文を更新しました")
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ 説明文の更新に失敗しました: {e}")
         else:
             st.info("変更がありません")
 
