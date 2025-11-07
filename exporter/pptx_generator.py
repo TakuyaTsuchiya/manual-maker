@@ -8,6 +8,26 @@ from pptx.util import Inches, Pt
 from utils.image_manager import ImageData
 
 
+# レイアウト定数
+SLIDE_LAYOUT_TITLE = 0  # タイトルスライド
+SLIDE_LAYOUT_BLANK = 6  # 空白スライド
+
+# 画像配置定数
+IMAGE_LEFT = Inches(1)
+IMAGE_TOP = Inches(1)
+IMAGE_HEIGHT = Inches(4.5)
+
+# 説明文配置定数
+DESC_LEFT = Inches(1)
+DESC_TOP = Inches(5.8)
+DESC_WIDTH = Inches(8)
+DESC_HEIGHT = Inches(1)
+DESC_FONT_SIZE = Pt(14)
+
+# デフォルト値
+DEFAULT_TITLE = "マニュアル"
+
+
 class PPTXGenerator:
     """PowerPoint生成クラス"""
 
@@ -37,7 +57,7 @@ class PPTXGenerator:
 
         # タイトルスライドを作成（タイトル指定時または画像がある場合）
         if title or len(image_data_list) > 0:
-            self._create_title_slide(prs, title or "マニュアル")
+            self._create_title_slide(prs, title or DEFAULT_TITLE)
 
         # 画像スライドを作成
         for img_data in image_data_list:
@@ -57,8 +77,7 @@ class PPTXGenerator:
             prs: プレゼンテーションオブジェクト
             title: タイトル文字列
         """
-        # タイトルスライドレイアウト（0番目）を使用
-        title_slide_layout = prs.slide_layouts[0]
+        title_slide_layout = prs.slide_layouts[SLIDE_LAYOUT_TITLE]
         slide = prs.slides.add_slide(title_slide_layout)
 
         # タイトルを設定
@@ -73,8 +92,7 @@ class PPTXGenerator:
             prs: プレゼンテーションオブジェクト
             img_data: 画像データ
         """
-        # 空白スライドレイアウト（6番目）を使用
-        blank_slide_layout = prs.slide_layouts[6]
+        blank_slide_layout = prs.slide_layouts[SLIDE_LAYOUT_BLANK]
         slide = prs.slides.add_slide(blank_slide_layout)
 
         # 画像を追加
@@ -92,12 +110,12 @@ class PPTXGenerator:
             slide: スライドオブジェクト
             image_path: 画像ファイルパス
         """
-        # スライドの中央上部に画像を配置
-        left = Inches(1)
-        top = Inches(1)
-        height = Inches(4.5)  # 高さを指定（アスペクト比は自動調整）
-
-        slide.shapes.add_picture(image_path, left, top, height=height)
+        slide.shapes.add_picture(
+            image_path,
+            IMAGE_LEFT,
+            IMAGE_TOP,
+            height=IMAGE_HEIGHT
+        )
 
     def _add_description_to_slide(self, slide, description: str) -> None:
         """
@@ -107,16 +125,15 @@ class PPTXGenerator:
             slide: スライドオブジェクト
             description: 説明文
         """
-        # スライド下部にテキストボックスを追加
-        left = Inches(1)
-        top = Inches(5.8)
-        width = Inches(8)
-        height = Inches(1)
-
-        textbox = slide.shapes.add_textbox(left, top, width, height)
+        textbox = slide.shapes.add_textbox(
+            DESC_LEFT,
+            DESC_TOP,
+            DESC_WIDTH,
+            DESC_HEIGHT
+        )
         text_frame = textbox.text_frame
         text_frame.text = description
 
         # フォント設定
         paragraph = text_frame.paragraphs[0]
-        paragraph.font.size = Pt(14)
+        paragraph.font.size = DESC_FONT_SIZE
