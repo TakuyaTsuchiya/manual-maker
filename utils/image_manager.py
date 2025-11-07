@@ -128,6 +128,19 @@ class ImageManager:
             img.order = i
         self.save_metadata()
 
+    def swap_images(self, idx1: int, idx2: int):
+        """
+        2つの画像の順序を入れ替え
+
+        Args:
+            idx1: 1つ目の画像インデックス
+            idx2: 2つ目の画像インデックス
+        """
+        if 0 <= idx1 < len(self.images) and 0 <= idx2 < len(self.images):
+            current_order = list(range(len(self.images)))
+            current_order[idx1], current_order[idx2] = current_order[idx2], current_order[idx1]
+            self.reorder_images(current_order)
+
     def undo(self) -> bool:
         """
         直前の操作を取り消し
